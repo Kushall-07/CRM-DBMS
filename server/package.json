@@ -1,0 +1,19 @@
+{
+  "name": "crm-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node index.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.17.1",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "nanoid": "^5.0.7",
+    "prisma": "^6.17.1"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2"
+  }
+}

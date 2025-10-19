@@ -1,0 +1,48 @@
+// This is your Prisma schema file
+// Learn more at https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+/* ========= MODELS ========= */
+
+model Account {
+  id        String        @id @default(uuid())
+  name      String
+  industry  String?
+  website   String?
+  createdAt DateTime      @default(now())
+  opps      Opportunity[]
+}
+
+model Lead {
+  id        String   @id @default(uuid())
+  fullName  String
+  company   String?
+  email     String?
+  status    String   @default("NEW")
+  createdAt DateTime @default(now())
+}
+
+model Opportunity {
+  id         String   @id @default(uuid())
+  name       String
+  stage      String   @default("PROSPECTING")
+  amount     Float?
+  createdAt  DateTime @default(now())
+  accountId  String
+
+  // 👇 CASCADE when an Account is deleted
+  account    Account  @relation(
+    fields:     [accountId],
+    references: [id],
+    onDelete:   Cascade
+  )
+}
