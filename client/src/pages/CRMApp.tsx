@@ -564,33 +564,31 @@ function LeadsView() {
     await fetch(`${API}/leads`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        fullName,
-        company: company || undefined,
-        email: email || undefined,
-      }),
+      body: JSON.stringify({ fullName, company: company || undefined, email: email || undefined }),
     });
     setFullName(""); setCompany(""); setEmail("");
     await load();
   };
 
-  const removeLead = async (id: string) => {
+  const remove = async (id: string) => {
     if (!confirm("Delete this lead? This cannot be undone.")) return;
-    try {
-      const res = await fetch(`${API}/leads/${encodeURIComponent(id)}`, { method: "DELETE" });
-      if (!res.ok) {
-        let msg = `${res.status} ${res.statusText}`;
-        try {
-          const data = await res.json();
-          if (data?.error) msg = data.error;
-        } catch {}
-        alert(`Failed to delete lead: ${msg}`);
-        return;
-      }
-      await load();
-    } catch (e: any) {
-      alert(`Failed to delete lead: ${e?.message || e}`);
+    const res = await fetch(`${API}/leads/${id}`, { method: "DELETE" });
+    if (!res.ok) alert("Failed to delete lead.");
+    await load();
+  };
+
+  const convertLead = async (id: string) => {
+    if (!confirm("Convert this lead to Account + Opportunity?")) return;
+
+    const res = await fetch(`${API}/leads/${id}/convert`, { method: "POST" });
+
+    if (!res.ok) {
+      alert("Failed to convert lead.");
+      return;
     }
+
+    alert("Lead converted successfully!");
+    await load();
   };
 
   const filtered = useMemo(() => {
@@ -609,45 +607,24 @@ function LeadsView() {
       <h2 className="crm-section-title">Leads</h2>
 
       <form className="crm-form grid-4" onSubmit={create}>
-        <input
-          placeholder="Full name"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          required
-        />
-        <input
-          placeholder="Company"
-          value={company}
-          onChange={(e) => setCompany(e.target.value)}
-        />
-        <input
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+        <input placeholder="Full name" value={fullName} onChange={e => setFullName(e.target.value)} required />
+        <input placeholder="Company" value={company} onChange={e => setCompany(e.target.value)} />
+        <input placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
         <button type="submit" className="btn-primary">Add</button>
       </form>
 
       <div className="search-bar">
-        <input
-          placeholder="Search leads..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
+        <input placeholder="Search leads..." value={query} onChange={(e) => setQuery(e.target.value)} />
       </div>
 
       <div className="card-table">
         <table className="table">
           <thead>
-            <tr>
-              <th>Name</th><th>Company</th><th>Email</th><th>Status</th><th>Actions</th>
-            </tr>
+            <tr><th>Name</th><th>Company</th><th>Email</th><th>Status</th><th>Actions</th></tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="empty">No leads yet. Add your first one above!</td>
-              </tr>
+              <tr><td colSpan={5} className="empty">No leads yet. Add your first one above!</td></tr>
             ) : filtered.map((l) => (
               <tr key={l.id}>
                 <td>{l.fullName}</td>
@@ -655,10 +632,28 @@ function LeadsView() {
                 <td>{l.email || "—"}</td>
                 <td>{l.status}</td>
                 <td style={{ whiteSpace: "nowrap" }}>
+                  {/* Convert Lead */}
+                  {l.status === "NEW" && (
+                    <button
+                      className="btn-secondary"
+                      type="button"
+                      onClick={() => convertLead(l.id)}
+                    >
+                      Convert
+                    </button>
+                  )}
+
+                  {/* Already Converted */}
+                  {l.status === "QUALIFIED" && (
+                    <span style={{ color: "#0a7", fontWeight: 600 }}>Converted</span>
+                  )}
+
+                  {/* Delete */}
                   <button
                     className="btn-danger"
                     type="button"
-                    onClick={() => removeLead(l.id)}
+                    onClick={() => remove(l.id)}
+                    style={{ marginLeft: "8px" }}
                   >
                     Delete
                   </button>

@@ -91,25 +91,40 @@ app.post('/leads', async (req, res) => {
   }
 });
 
-app.post('/leads/:id/convert', async (req, res) => {
+// CONVERT LEAD → Account + Opportunity (with optional amount)
+app.post("/leads/:id/convert", async (req, res) => {
   try {
     const { id } = req.params;
+    const { amount } = req.body ?? {};
+
+    // 1) mark lead as QUALIFIED
     const lead = await prisma.lead.update({
       where: { id },
-      data: { status: 'QUALIFIED' },
+      data: { status: "QUALIFIED" },
     });
+
+    // 2) create account from lead
     const account = await prisma.account.create({
       data: { name: lead.company || lead.fullName },
     });
+
+    // 3) create opportunity, include amount if provided
     const opp = await prisma.opportunity.create({
-      data: { name: `New deal - ${lead.fullName}`, accountId: account.id, stage: 'PROSPECTING' },
+      data: {
+        name: `New deal - ${lead.fullName}`,
+        accountId: account.id,
+        stage: "PROSPECTING",
+        amount: amount ? Number(amount) : null,
+      },
     });
+
     res.json({ account, opp });
   } catch (e) {
-    console.error('Convert lead error:', e);
-    res.status(400).json({ error: 'Failed to convert lead' });
+    console.error("Convert lead error:", e);
+    res.status(400).json({ error: "Failed to convert lead" });
   }
 });
+
 
 // ✅ THIS is the route the browser is calling
 app.delete('/leads/:id', async (req, res) => {
